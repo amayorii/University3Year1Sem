@@ -2,21 +2,19 @@ package com.company;
 
 public class MainThread extends Thread{
     private final int id;
-    private final BreakThread breakThread;
 
-    public MainThread(int id, BreakThread breakThread) {
+    public MainThread(int id) {
         this.id = id;
-        this.breakThread = breakThread;
     }
 
     @Override
     public void run() {
         long sum = 0;
-        boolean isStop = false;
-        do{
-            sum++;
-            isStop = breakThread.isCanBreak();
-        } while (!isStop);
-        System.out.println(id + " - " + sum);
+        long count = 0;
+        do {
+            sum += 2;
+            count++;
+        } while (!Main.canBreak);
+        System.out.println("id - " + id + " | sum - " + sum + " | amount of elements - " + count);
     }
 }

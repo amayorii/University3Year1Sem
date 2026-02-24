@@ -3,43 +3,25 @@ using System;
 
 namespace threaddemo
 {
-    class Program
+    public class Program
     {
-        static void Main(string[] args)
+        static void Main()
         {
-            (new Program()).Start();
-        }
+            System.Console.Write("Enter amount of threads: ");
+            int amount = Convert.ToInt32(Console.ReadLine());
+            System.Console.Write("Enter sleep seconds: ");
+            int seconds = Convert.ToInt32(Console.ReadLine());
 
-        void Start()
-        {
-            (new Thread(Calcuator)).Start();
-            (new Thread(Calcuator)).Start();
-            (new Thread(Calcuator)).Start();
-
-            Thread thread1 = new Thread(Calcuator);
-            thread1.Start();
-
-            (new Thread(Stoper)).Start();
-        }
-
-        void Calcuator()
-        {
-            long sum = 0;
-            do
+            for (int i = 0; i < amount; i++)
             {
-                sum++;
-            } while (!canStop);
-            Console.WriteLine(sum);
+                new ThreadCalculator().Start();
+            }
+
+            new ThreadStopper(seconds).Start();
         }
 
-        private bool canStop = false;
+        private static bool canStop = false;
 
-        public bool CanStop { get => canStop; }
-
-        public void Stoper()
-        {
-            Thread.Sleep(30 * 1000);
-            canStop = true;
-        }
+        public static bool CanStop { get => canStop; set => canStop = value; }
     }
 }

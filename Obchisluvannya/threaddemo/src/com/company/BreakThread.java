@@ -1,7 +1,6 @@
 package com.company;
 
-public class BreakThread implements Runnable{
-    private boolean canBreak = false;
+public class BreakThread implements Runnable {
     @Override
     public void run() {
         try {
@@ -9,10 +8,6 @@ public class BreakThread implements Runnable{
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        canBreak = true;
-    }
-
-    synchronized public boolean isCanBreak() {
-        return canBreak;
+        Main.canBreak = true;
     }
 }
