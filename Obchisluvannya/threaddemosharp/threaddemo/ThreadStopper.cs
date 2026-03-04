@@ -4,15 +4,33 @@ public class ThreadStopper
 {
     private readonly Thread thread;
 
-    public ThreadStopper(int seconds)
+    private static Dictionary<int, int> timers = [];
+    private static List<ThreadCalculator> threads = [];
+
+    public ThreadStopper()
     {
-        thread = new Thread(new ParameterizedThreadStart(method => Stopper(1000 * seconds)));
+        thread = new Thread(new ParameterizedThreadStart(method => Stopper()));
     }
 
-    private static void Stopper(int milliseconds)
+    private static void Stopper()
     {
-        Thread.Sleep(milliseconds);
-        Program.CanStop = true;
+        var timersSorted = timers.OrderBy(x => x.Value).ToList();
+
+        int time = 0;
+        foreach (var timer in timersSorted)
+        {
+            Thread.Sleep(timer.Value - time);
+            time = timer.Value;
+
+            threads[timer.Key - 1].Stop();
+        }
+    }
+    public void AddThread(ThreadCalculator thread)
+    {
+        threads.Add(thread);
+        var random = new Random().Next(2000, 10000);
+        timers[thread.ThreadId] = random;
+        System.Console.WriteLine(random);
     }
 
     public void Start()

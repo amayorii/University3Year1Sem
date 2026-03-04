@@ -9,19 +9,17 @@ namespace threaddemo
         {
             System.Console.Write("Enter amount of threads: ");
             int amount = Convert.ToInt32(Console.ReadLine());
-            System.Console.Write("Enter sleep seconds: ");
-            int seconds = Convert.ToInt32(Console.ReadLine());
+
+            ThreadStopper stopper = new ThreadStopper();
 
             for (int i = 0; i < amount; i++)
             {
-                new ThreadCalculator().Start();
+                var thread = new ThreadCalculator(i + 1);
+                stopper.AddThread(thread);
+                thread.Start();
             }
 
-            new ThreadStopper(seconds).Start();
+            stopper.Start();
         }
-
-        private static bool canStop = false;
-
-        public static bool CanStop { get => canStop; set => canStop = value; }
     }
 }

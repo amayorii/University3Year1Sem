@@ -10,10 +10,17 @@ public class ThreadCalculator
         set { id = value; }
     }
 
-    public ThreadCalculator()
+    private volatile bool run = true;
+
+    public ThreadCalculator(int id)
     {
         thread = new Thread(Calculator);
-        ThreadId = thread.ManagedThreadId;
+        ThreadId = id;
+    }
+
+    public void Stop()
+    {
+        run = false;
     }
 
     private void Calculator()
@@ -24,7 +31,7 @@ public class ThreadCalculator
         {
             count++;
             sum += 3;
-        } while (!Program.CanStop);
+        } while (run);
         Console.WriteLine($"ThreadId: {ThreadId} | Sum: {sum} | Amount of elements: {count}");
     }
 
