@@ -6,7 +6,7 @@ namespace Laba2
 {
     class Program
     {
-        private static readonly int length = 10000000;
+        private static readonly int length = 1_000_000;
         private readonly int[] arr = new int[length];
         private static readonly int threadNum = 8;
         private int finishedThreadCount = 0;
@@ -49,12 +49,12 @@ namespace Laba2
 
         private long ParallelMin()
         {
-            int chunkSize = length / threadNum;
+            int chunk = length / threadNum;
 
             for (int i = 0; i < threadNum; i++)
             {
-                int start = i * chunkSize;
-                int end = (i == threadNum - 1) ? length : start + chunkSize;
+                int start = i * chunk;
+                int end = (i == threadNum - 1) ? length : start + chunk;
 
                 thread[i] = new Thread(ParallelSumThread!);
                 thread[i].Start(new Bound(start, end));
@@ -118,6 +118,7 @@ namespace Laba2
             return (localMin, localIndex);
         }
     }
+
     class Bound
     {
         public Bound(int startIndex, int finishIndex)

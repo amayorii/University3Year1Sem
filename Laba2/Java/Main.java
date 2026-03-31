@@ -1,7 +1,7 @@
 import java.util.Random;
 
 public class Main {
-    private static final int LENGTH = 1_000_000_000;
+    private static final int LENGTH = 1_000_000;
     private static final int THREAD_NUM = 8;
     
     private final int[] arr = new int[LENGTH];
