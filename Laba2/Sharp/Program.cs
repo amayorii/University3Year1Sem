@@ -24,15 +24,16 @@ namespace Laba2
 
             sw.Start();
             var result = main.PartMin(0, length);
-            Console.WriteLine("Sequential min: " + result.Item1 + " | " + "Index: " + result.Item2);
             sw.Stop();
 
+            Console.WriteLine("Sequential min: " + result.Item1 + " | " + "Index: " + result.Item2);
             System.Console.WriteLine($"Elapsed time: {sw.ElapsedMilliseconds} ms");
 
             sw.Restart();
-            Console.WriteLine("Parallel min:   " + main.ParallelMin() + " | " + "Index: " + main.index);
+            var result1 = main.ParallelMin();
             sw.Stop();
 
+            Console.WriteLine("Parallel min:   " + result1 + " | " + "Index: " + main.index);
             System.Console.WriteLine($"Elapsed time: {sw.ElapsedMilliseconds} ms");
         }
 
