@@ -1,4 +1,6 @@
 with Ada.Text_IO; use Ada.Text_IO;
+with GNAT.Semaphores; use GNAT.Semaphores;
+with System;
 
 procedure Main is
    Cons_Amount : constant Integer := 3;
@@ -6,59 +8,31 @@ procedure Main is
    Storage_Size     : constant Integer := 3;
    Items_Needed     : constant Integer := 20;
 
-   --------------------------------------------------------
-   -- ВИПРАВЛЕННЯ ПОМИЛКИ: Оголошуємо іменований тип масиву
-   --------------------------------------------------------
    type Storage_Array is array (1 .. Storage_Size) of Integer;
 
    --------------------------------------------------------
-   -- 1. Захищений об'єкт "Склад"
+   -- Глобальні змінні для буфера та лічильника
    --------------------------------------------------------
-   protected Buffer is
-      entry Put (Item : Integer);
-      entry Get (Item : out Integer);
-   private
-      Storage : Storage_Array;
-      Head    : Integer := 1;
-      Tail    : Integer := 1;
-      Count   : Integer := 0;
-   end Buffer;
-
-   protected body Buffer is
-      entry Put (Item : Integer) when Count < Storage_Size is
-      begin
-         Storage (Tail) := Item;
-         Tail := (Tail mod Storage_Size) + 1;
-         Count := Count + 1;
-      end Put;
-
-      entry Get (Item : out Integer) when Count > 0 is
-      begin
-         Item := Storage (Head);
-         Head := (Head mod Storage_Size) + 1;
-         Count := Count - 1;
-      end Get;
-   end Buffer;
+   Storage      : Storage_Array;
+   Head         : Integer := 1;
+   Tail         : Integer := 1;
+   Current_Item : Integer := 0;
 
    --------------------------------------------------------
-   -- 2. Захищений лічильник
+   -- Семафори
    --------------------------------------------------------
-   protected Item_Counter is
-      procedure Get_Next (Item : out Integer);
-   private
-      Current_Item : Integer := 0;
-   end Item_Counter;
-
-   protected body Item_Counter is
-      procedure Get_Next (Item : out Integer) is
-      begin
-         Item := Current_Item;
-         Current_Item := Current_Item + 1;
-      end Get_Next;
-   end Item_Counter;
+   -- Семафор для перевірки наявності вільного місця
+   Empty_Storage : Counting_Semaphore (Storage_Size, System.Default_Priority);
+   
+   -- Семафор для перевірки наявності готових товарів
+   Full_Storage  : Counting_Semaphore (0, System.Default_Priority);
+   
+   -- М'ютекси (лічильні семафори з ініціалізацією 1) для критичних секцій
+   Access_Mutex  : Counting_Semaphore (1, System.Default_Priority);
+   Counter_Mutex : Counting_Semaphore (1, System.Default_Priority);
 
    --------------------------------------------------------
-   -- 3. Оголошення типів потоків
+   -- Оголошення типів потоків
    --------------------------------------------------------
    task type Producer (Index : Integer; Quota : Integer);
    task type Consumer (Index : Integer; Quota : Integer);
@@ -67,10 +41,21 @@ procedure Main is
       Item_To_Put : Integer;
    begin
       for I in 1 .. Quota loop
-         Item_Counter.Get_Next (Item_To_Put);
-         Buffer.Put (Item_To_Put);
+         Counter_Mutex.Seize;
+         Item_To_Put := Current_Item;
+         Current_Item := Current_Item + 1;
+         Counter_Mutex.Release;
+
+         Empty_Storage.Seize;
+         Access_Mutex.Seize; 
+
+         Storage (Tail) := Item_To_Put;
+         Tail := (Tail mod Storage_Size) + 1;
          
          Put_Line ("Producer" & Integer'Image (Index) & " added item" & Integer'Image (Item_To_Put));
+
+         Access_Mutex.Release; 
+         Full_Storage.Release; 
       end loop;
    end Producer;
 
@@ -80,13 +65,21 @@ procedure Main is
       for I in 1 .. Quota loop
          delay 1.0;
          
-         Buffer.Get (Item_To_Get);
+         Full_Storage.Seize;
+         Access_Mutex.Seize;
+
+         Item_To_Get := Storage (Head);
+         Head := (Head mod Storage_Size) + 1;
+         
          Put_Line ("Consumer" & Integer'Image (Index) & " took item" & Integer'Image (Item_To_Get));
+
+         Access_Mutex.Release;
+         Empty_Storage.Release;
       end loop;
    end Consumer;
 
    --------------------------------------------------------
-   -- 4. Головний блок ініціалізації
+   -- Головний блок ініціалізації
    --------------------------------------------------------
    type Producer_Access is access Producer;
    type Consumer_Access is access Consumer;
@@ -95,16 +88,16 @@ procedure Main is
    Consumers : array (0 .. Cons_Amount - 1) of Consumer_Access;
 
    Temp_Chunk_Prod : Integer;
-   Temp_Chunk_Con : Integer;
+   Temp_Chunk_Con  : Integer;
    Remainder_Prod  : Integer;
-   Remainder_Con  : Integer;
-   Chunk      : Integer;
+   Remainder_Con   : Integer;
+   Chunk           : Integer;
 
 begin
    Temp_Chunk_Prod := Items_Needed / Prod_Amount;
-   Temp_Chunk_Con := Items_Needed / Cons_Amount;
+   Temp_Chunk_Con  := Items_Needed / Cons_Amount;
    Remainder_Prod  := Items_Needed mod Prod_Amount;
-   Remainder_Con  := Items_Needed mod Cons_Amount;
+   Remainder_Con   := Items_Needed mod Cons_Amount;
 
    for I in 0 .. Prod_Amount - 1 loop
       if I = Prod_Amount - 1 then
