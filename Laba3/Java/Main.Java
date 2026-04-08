@@ -3,7 +3,8 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 
 public class Main {
-    private final int consProdAmount = 3;
+    private final int consAmount = 3;
+    private final int prodsAmount = 2;
     private final static int storageSize = 3;
     private final int itemsNeeded = 20;
     
@@ -20,19 +21,28 @@ public class Main {
     }
 
     private void start() {
-        int tempChunk = itemsNeeded / consProdAmount;
-        int remainder = itemsNeeded % consProdAmount;
+        int tempChunkProd = itemsNeeded / prodsAmount;
+        int tempChunkCons = itemsNeeded / consAmount;
+        int remainderProds = itemsNeeded % prodsAmount;
+        int remainderCons = itemsNeeded % consAmount;
 
-        for (int i = 0; i < consProdAmount; i++) {
-            int chunk = (i == consProdAmount - 1) ? remainder + tempChunk : tempChunk;
+        for (int i = 0; i < consAmount; i++) {
+            int chunk = (i == consAmount - 1) ? remainderCons + tempChunkCons : tempChunkCons;
             
             int index = i; 
             int finalChunk = chunk;
 
-            Thread threadProducer = new Thread(() -> producer(index, finalChunk));
             Thread threadConsumer = new Thread(() -> consumer(index, finalChunk));
-
             threadConsumer.start();
+        }
+
+        for(int i = 0; i < prodsAmount; i++){
+            int chunk = (i == prodsAmount - 1) ? remainderProds + tempChunkProd : tempChunkProd;
+
+            int index = i; 
+            int finalChunk = chunk;
+
+            Thread threadProducer = new Thread(() -> producer(index, finalChunk));
             threadProducer.start();
         }
     }

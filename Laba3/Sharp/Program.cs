@@ -2,7 +2,8 @@
 {
     class Program
     {
-        private readonly int consProdAmount = 3;
+        private readonly int consAmount = 3;
+        private readonly int prodAmount = 2;
         private readonly static int storageSize = 3;
         private readonly int itemsNeeded = 20;
         private int itemsNow = 0;
@@ -20,19 +21,29 @@
 
         private void Start()
         {
-            int tempChunk = itemsNeeded / consProdAmount;
-            int remainder = itemsNeeded % consProdAmount;
+            int tempChunkProd = itemsNeeded / prodAmount;
+            int tempChunkCon = itemsNeeded / consAmount;
+            int remainderProd = itemsNeeded % prodAmount;
+            int remainderCon = itemsNeeded % consAmount;
 
-            for (int i = 0; i < consProdAmount; i++)
+            for (int i = 0; i < prodAmount; i++)
             {
-                int chunk = (i == consProdAmount - 1) ? remainder + tempChunk : tempChunk;
+                int chunk = (i == prodAmount - 1) ? remainderProd + tempChunkProd : tempChunkProd;
+                int index = i;
+
+                Thread threadProducer = new(() => Producer(index, chunk));
+
+                threadProducer.Start();
+            }
+
+            for (int i = 0; i < consAmount; i++)
+            {
+                int chunk = (i == consAmount - 1) ? remainderCon + tempChunkCon : tempChunkCon;
                 int index = i;
 
                 Thread threadConsumer = new(() => Consumer(index, chunk));
-                Thread threadProducer = new(() => Producer(index, chunk));
 
                 threadConsumer.Start();
-                threadProducer.Start();
             }
         }
 
