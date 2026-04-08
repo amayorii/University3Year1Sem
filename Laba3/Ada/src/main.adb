@@ -1,6 +1,7 @@
 with Ada.Text_IO; use Ada.Text_IO;
 with GNAT.Semaphores; use GNAT.Semaphores;
 with System;
+with Ada.Unchecked_Deallocation;
 
 procedure Main is
    Cons_Amount : constant Integer := 3;
@@ -84,6 +85,16 @@ procedure Main is
    type Producer_Access is access Producer;
    type Consumer_Access is access Consumer;
 
+   -- Створюємо процедуру для звільнення пам'яті Producer
+   procedure Free_Producer is new Ada.Unchecked_Deallocation
+     (Object => Producer,
+      Name   => Producer_Access);
+
+   -- Створюємо процедуру для звільнення пам'яті Consumer
+   procedure Free_Consumer is new Ada.Unchecked_Deallocation
+     (Object => Consumer,
+      Name   => Consumer_Access);
+
    Producers : array (0 .. Prod_Amount - 1) of Producer_Access;
    Consumers : array (0 .. Cons_Amount - 1) of Consumer_Access;
 
@@ -117,6 +128,28 @@ begin
       end if;
 
       Consumers (I) := new Consumer (Index => I, Quota => Chunk);
+   end loop;
+
+   -- Чекаємо завершення та звільняємо Продюсерів
+   for I in Producers'Range loop
+      -- Цикл очікування: поки потік НЕ завершений, чекаємо 0.1 секунди
+      while not Producers (I)'Terminated loop
+         delay 0.1;
+      end loop;
+      
+      -- Тепер безпечно звільняємо пам'ять
+      Free_Producer (Producers (I));
+   end loop;
+
+   -- Чекаємо завершення та звільняємо Консюмерів
+   for I in Consumers'Range loop
+      -- Цикл очікування
+      while not Consumers (I)'Terminated loop
+         delay 0.1;
+      end loop;
+      
+      -- Тепер безпечно звільняємо пам'ять
+      Free_Consumer (Consumers (I));
    end loop;
 
 end Main;
